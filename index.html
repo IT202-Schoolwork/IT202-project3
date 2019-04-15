@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<style>
+    html, body {
+        overflow: hidden;
+        margin: 0;
+    }
+</style>  
+  
+<canvas onkeyup="whichButton(event)" id="myCanvas" width="" height="" style="border:0px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+   
+<script>
+    var c = document.getElementById("myCanvas");
+    c.width = screen.width;
+    c.height = screen.height; 
+    var ctx = c.getContext("2d");
+    ctx.font = "30px Arial";
+    
+    //images
+    var p = new Image();
+    p.src = "spaceship.png";
+      
+    var enemy = new Image();
+    enemy.src = "http://pixelartmaker.com/art/b0d28fcc8a7f281.png";
+    
+    var item = new Image();
+    item.src = "http://pixelartmaker.com/art/1687d1d88116203.png";
+    
+    var background = new Image();
+    background.src = "backImage.png";
+    
+    //game objects
+    var g1 = {type:"enemy", x:screen.width, y:100, r:47, xVel:-2, yVel:-1};
+    var bonus = {type:"item", x:screen.width, y:500, r:47, xVel:-2, yVel:2};
+    var player = {type:"player", x:100, y:150, r:47, xVel:0, yVel:0};
+    
+    //game array of characters/objects
+    var arr = [g1, bonus, player];
+    
+    //initalize levels/enemies/score
+    var lives = 3;
+    var level = 1;
+    var score = 0;
+    
+    //main game loop
+    function game(){
+        //play game while lives are abopve 0
+        if(lives != 0){
+            draw(); //display game
+            
+            tick(); //increment game logic
+        
+            window.requestAnimationFrame(game); //recursively call game function, creating game loop
+            
+        }else{ //player has died, set game over screen
+            ctx.fillStyle = "Blue";
+            ctx.fillText("GAME OVER", screen.width/2-100, screen.height/2-100);
+        }
+        
+        
+    }
+    
+    //drawing each object into the canvas
+    function draw(){
+        //clearing canvas to draw fresh images
+        ctx.clearRect(0,0,c.width, c.height);
+        
+        //Make sure the image is loaded first otherwise nothing will draw.
+        ctx.drawImage(background,0,0);   
+        
+        //Scoreboard/level/Life Total
+        ctx.fillStyle = "lightblue";
+        ctx.fillText("Score: " + score + "   " + "Level: " + level + "   " + "Lives: " + lives, 10, 50);
+        
+        //looping through and drawing
+        for(idx in arr){
+            g = arr[idx];
+            
+            if(g.type == "player"){
+                ctx.beginPath();
+                ctx.arc(g.x, g.y, g.r, 0, 2 * Math.PI);        
+                ctx.strokeStyle = "white";
+                ctx.fillStyle = "black";
+                ctx.fill();
+                ctx.stroke();
+                ctx.drawImage(p,(g.x)-42,(g.y)-42,84,84);    
+            }
+            else if(g.type == "enemy"){
+                ctx.beginPath();
+                ctx.arc(g.x, g.y, g.r, 0, 2 * Math.PI); 
+                ctx.strokeStyle = "white";
+                ctx.fillStyle = "black";
+                ctx.fill();
+                ctx.stroke();
+                ctx.drawImage(enemy,(g.x)-43,(g.y)-43,86,86); 
+            }
+            else if(g.type == "item"){
+                ctx.beginPath();
+                ctx.arc(g.x, g.y, g.r, 0, 2 * Math.PI);
+                ctx.strokeStyle = "white";
+                ctx.fillStyle = "black";
+                ctx.fill();
+                ctx.stroke();
+                ctx.drawImage(item,(g.x)-40,(g.y)-40,80,80);
+            }    
+        }
+    }
+    
+    //game logic for movement/interaction
+    function tick(){
+        for(idx in arr){
+            g = arr[idx];
+           
+            //incrementing position and bounary checking
+            if(g.type == "player"){
+                g.x += g.xVel;
+                g.y += g.yVel;
+            }
+            else if(g.type == "enemy"){
+                g.x += g.xVel;
+                if((g.x - g.r) < 0){
+                    g.x = c.width - g.r;
+                    g.y = Math.random()*screen.height;
+                }
+            }
+            else if(g.type == "item"){
+                g.x += g.xVel;
+                if((g.x - g.r) < 0){
+                    g.x = c.width - g.r;
+                    g.y = Math.random()*screen.height;
+                }
+            }
+        }
+        
+        //collision detection
+        for(idx in arr){
+            g = arr[idx];
+
+            if(g.type == "enemy"){ //checking for collision with enemies
+                var dx = Math.abs(player.x - g.x);
+                var dy = Math.abs(player.y - g.y);
+                var distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < player.r + g.r) {
+                    lives = lives - 1;
+                    
+                    //random y
+                    g.x = screen.width;
+                    g.y = Math.random()*screen.height;
+ 
+                }
+            }
+            if(g.type == "item"){ //checking for collision with items
+                var dx = Math.abs(player.x - g.x);
+                var dy = Math.abs(player.y - g.y);
+                var distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < player.r + g.r) {
+                    delete arr[idx];
+                    var xVal = c.width;
+                        
+                    var yValE = Math.random()*screen.height-100;
+                    var yValI = Math.random()*screen.height-100;
+                    if(yValE < 0)
+                        yValE += 130;
+                    if(yValI < 0)
+                        yValI += 130;
+                    
+                    
+                    var en = {type:"enemy", x:xVal, y:yValE, r:47, xVel:-(level+1), yVel:1};
+                    var it = {type:"item", x:xVal, y:yValI, r:47, xVel:-(level+1), yVel:1};
+                    arr.push(en);
+                    arr.push(it);
+                    
+                    score += 10;
+                    level++;
+                }
+            }
+        }
+    }
+    
+    window.requestAnimationFrame(game);
+
+    document.onkeydown = checkKey;
+    
+    function checkKey(e){
+        e = e || window.event;
+        
+        if (e.keyCode == '38') {
+            player.yVel = -5;
+        }
+        if (e.keyCode == '40') {
+            player.yVel = 5;
+        }
+        if (e.keyCode == '37') {
+           //player.xVel = -5;
+        }
+        if (e.keyCode == '39') {
+           //player.xVel = 5;
+        }
+    }
+    
+    document.onkeyup = checkKey2;
+    
+    function checkKey2(e){
+        e = e || window.event;
+        
+        if (e.keyCode == '38') {
+            player.yVel = 0;
+        }
+        else if (e.keyCode == '40') {
+            player.yVel = 0;
+        }
+        else if (e.keyCode == '37') {
+           //player.xVel = 0;
+        }
+        else if (e.keyCode == '39') {
+           //player.xVel = 0;
+        }
+    }
+</script> 
+
+</body>
+</html>
